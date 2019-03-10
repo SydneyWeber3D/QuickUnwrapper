@@ -16,7 +16,7 @@ def quWindow():
 	cmds.window("quWindow",t="Quick Unwrapper",rtf=True,mnb=False,mxb=False,s=True)
 	cmds.columnLayout("quContainer",cat=("both",10),cw=200,p="quWindow")
 	cmds.rowLayout("shelfOffer")
-	cmds.button(ann="Add QuickUnwrapper to the current shelf",l="H",w=180,h=20,c=(lambda _: makeShelfButton()))
+	cmds.button(ann="Add QuickUnwrapper to the current shelf",l="Add to shelf",w=180,h=20,c=(lambda _: makeShelfButton()))
 	cmds.setParent("quContainer")
 	cmds.separator(w=180,h=10,st="none")
 	cmds.rowLayout("dropSeam",nc=2)
