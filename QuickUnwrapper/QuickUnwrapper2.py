@@ -15,27 +15,31 @@ def quWindow():
 
 	# Draw first-launch/options window
 	cmds.window("quWindow",t="Quick Unwrapper",rtf=True,mnb=False,mxb=False,s=True)
+
 	cmds.columnLayout("quContainer",cat=("both",8),cw=256,p="quWindow")
 	# For safety measures, script automatically applies UV projection, ask if the user has any preferred method (Default is Planar across Z axis)
-	cmds.frameLayout("safetyFrame",l="Safety Projection Axis",cll=True,sbm="Resets the UVs by applying a planar UV projection on the selected mesh.  If the mesh is symmetrical, prefer the axis that crosses the mesh.",p="quContainer")
+	cmds.frameLayout("safetyFrame",l="Safety Projection Axis",mh=8,cll=True,sbm="Resets the UVs by applying a planar UV projection on the selected mesh.  If the mesh is symmetrical, prefer the axis that crosses the mesh.",p="quContainer")
 	cmds.rowLayout("sfRow",nc=3,p="safetyFrame")
 	safetyProjectionAxis = cmds.radioCollection(p="sfRow")
-	spaX = cmds.radioButton(l="X")
-	spaY = cmds.radioButton(l="Y")
-	spaZ = cmds.radioButton(l="Z")
+	spaX = cmds.radioButton(l="X",w=50,sl=False)
+	spaY = cmds.radioButton(l="Y",w=50,sl=False)
+	spaZ = cmds.radioButton(l="Z",w=50,sl=True)
 	# Ask if the user already has mesh softened/hardened in a UV friendly manner, or if the user pre-selected the edges where they want the seams to be, or if the user wants the script to decide where the seams should be (Method Check)
-	cmds.frameLayout("methodFrame",l="Unwrapping Method",cll=True,sbm="",p="quContainer")
+	cmds.frameLayout("methodFrame",l="Unwrapping Method",mh=8,cll=True,sbm="",p="quContainer")
 	cmds.columnLayout("methodMenu",p="methodFrame")
 	methodSelect = cmds.optionMenu(p="methodMenu")
+	cmds.menuItem(l="Automatic")
 	cmds.menuItem(l="Softness based")
 	cmds.menuItem(l="Selected edges")
-	cmds.menuItem(l="Automatic")
 	# If the user wants the pre-selected edges method, ask the user if they would like the script to automatically soften/harden edges based on UV seams
-	autoSoften = cmds.checkBox(l=" Soften/Harden Edges")
+	cmds.separator(w=256,h=8,st="none")
+	autoSoften = cmds.checkBox(l=" Soften/Harden Edges",en=False)
 	# If the user wants the automated method, ask the user if they have a preferred angle for auto-smoothing (default 45 degrees); else, disable
-	automaticAngle = cmds.floatField(v=45.0,min=30.0,max=60.0,pre=2)
+	cmds.rowLayout("autoMethodAngle",nc=2,p="methodFrame")
+	cmds.text(l="Softness/Hardness angle: ",en=False)
+	automaticAngle = cmds.floatField(v=45.0,min=30.0,max=60.0,w=64,pre=2,en=False)
 	# Request desired map size (1024px by default)
-	cmds.frameLayout("mappingFrame",l="Layout Settings",cll=True,sbm="",p="quContainer")
+	cmds.frameLayout("mappingFrame",l="Layout Settings",mh=8,cll=True,sbm="",p="quContainer")
 	cmds.rowLayout("mapRow",nc=2,p="mappingFrame")
 	cmds.text(l="Texture Resolution: ",p="mapRow")
 	layoutResolution = cmds.optionMenu(p="mapRow")
@@ -53,20 +57,23 @@ def quWindow():
 	# Request shell padding (4px by default) and tile padding (8px by default)
 	cmds.rowLayout("shellRow",nc=2,p="mappingFrame")
 	cmds.text(l="Shell padding",p="shellRow")
-	shellPadding = cmds.intField(v=4,min=0,max=64,p="shellRow")
+	shellPadding = cmds.intField(v=4,min=0,max=64,w=32,p="shellRow")
 	cmds.rowLayout("tileRow",nc=2,p="mappingFrame")
 	cmds.text(l="Tile padding",p="tileRow")
-	tilePadding = cmds.intField(v=8,min=0,max=64,p="tileRow")
+	tilePadding = cmds.intField(v=8,min=0,max=64,w=32,p="tileRow")
 	# Ask if the user desires to have similar UV shells stacked
 	cmds.rowLayout("stackRow",nc=2,p="mappingFrame")
 	stackSimilar = cmds.checkBox(l=" Stack similar shells")
 	# Apply unwrap, or Cancel and close buttons
 	cmds.setParent("quContainer")
 	cmds.separator(w=256,h=16,st="none")
-	cmds.button(l="Unwrap",w=90,h=30)
-	cmds.button(l="Cancel",w=90,h=30)
+	cmds.rowLayout("buttonsRow",nc=3,p="quContainer")
+	cmds.button(l="Unwrap",w=64,h=32,ann="Process the request and unwrap selected mesh.",c=(lambda args: processRequest()))
+	cmds.button(l="Cancel",w=64,h=32,ann="Cancel and close script.",c=("cmds.deleteUI(\"quWindow\",wnd=True); cmds.windowPref(\"quWindow\",r=True)"))
 	# Option to generate shelf button
-	cmds.button(l="?",w=30,h=30)
+	cmds.button(l="?",w=24,h=24,ann="Add QuickUnwrapper to the current shelf.",c=(lambda args: makeShelfButton()))
+
+	cmds.showWindow("quWindow")
 
 def processRequest():
 	# Set progress bar
