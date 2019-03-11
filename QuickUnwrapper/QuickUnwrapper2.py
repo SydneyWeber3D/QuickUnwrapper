@@ -77,7 +77,10 @@ def quWindow():
 
 def processRequest():
 	# Set progress bar
+	selectionBuffer = cmds.ls(sl=True,tr=True,tl=1,sn=True)
+	selectedMesh = selectionBuffer[0]
 	# Apply safety UV Projection (Planar Z?)
+	safetyProjection(selectedMesh)
 	# Increment progress bar
 	# If mesh pre-softened/hardened, skip; if user wants to use selected edges, switch to edge selection; else, apply auto mesh softness based on input (default 45 degrees)
 	# Increment progress bar
@@ -100,8 +103,14 @@ def processRequest():
 	# If user chose selected edges method, soften/harden edges based on selection; else, skip
 	# Complete progress bar, then remove
 
-def safetyProjection():
+def safetyProjection(selectedMesh):
 	# Apply safety UV Projection (Planar Z?)
+	cmds.select(selectedMesh+".f[*]")
+	facesBuffer = cmds.ls(sl=True,tl=1)
+	meshFaces = facesBuffer[0]
+	cmds.select(cl=True)
+
+	cmds.polyProjection(meshFaces,ch=False,t="Planar",md="z")
 
 def methodCheck():
 	# If mesh pre-softened/hardened, skip; if user wants to use selected edges, switch to edge selection; else, apply auto mesh softness based on input (default 45 degrees)
