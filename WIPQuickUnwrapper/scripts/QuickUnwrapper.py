@@ -67,7 +67,7 @@ def quWindow(setProjAxis,setMethod,setAngle,setSoftness,setResolution,setShellPa
 	# If the user wants the automated method, ask the user if they have a preferred angle for auto-smoothing (default 45 degrees); else, disable
 	cmds.rowLayout("autoMethodAngle",nc=2,ann="Sets the angle past which edges will be softened.",p="methodFrame")
 	cmds.text(l="Softness/Hardness angle: ")
-	automaticAngle = cmds.floatField(v=setAngle,min=15.0,max=90.0,w=40,pre=2)
+	autoAngle = cmds.floatField(v=setAngle,min=15.0,max=90.0,w=40,pre=2)
 	# If the user wants the pre-selected edges method, ask the user if they would like the script to automatically soften/harden edges based on UV seams
 	autoSoften = cmds.checkBox(l=" Soften/Harden Edges",v=setSoftness,ann="If checked, automatically softens and hardens edges based on the UV seams.",p="methodFrame")
 	# Request desired map size (1024px by default)
@@ -101,18 +101,18 @@ def quWindow(setProjAxis,setMethod,setAngle,setSoftness,setResolution,setShellPa
 	cmds.setParent("quContainer")
 	cmds.separator(w=256,h=8,st="none")
 	cmds.rowLayout("buttonsRow",nc=3,p="quContainer")
-	cmds.button(l="Unwrap",w=64,h=32,ann="Process the request and unwrap selected mesh.",c=(lambda args: checkVars(safetyProjectionAxis,methodSelect,automaticAngle,autoSoften,layoutResolution,shellPadding,tilePadding,stackSimilar)))
+	cmds.button(l="Unwrap",w=64,h=32,ann="Process the request and unwrap selected mesh.",c=(lambda args: checkVars(safetyProjectionAxis,methodSelect,autoAngle,autoSoften,layoutResolution,shellPadding,tilePadding,stackSimilar)))
 	cmds.button(l="Cancel",w=64,h=32,ann="Cancel and close script.",c=("cmds.deleteUI(\"quWindow\",wnd=True); cmds.windowPref(\"quWindow\",r=True)"))
-	cmds.button(l="Cancel",w=32,h=32,ann="Create shelf icon."",c=(lambda args:addShelfIcon()))
+	cmds.button(l="Cancel",w=32,h=32,ann="Create shelf icon.",c=(lambda args:addShelfIcon()))
 	cmds.separator(w=256,h=8,st="none",p="quContainer")
 
 	cmds.showWindow("quWindow")
 
-def checkVars(safetyProjectionAxis,methodSelect,automaticAngle,autoSoften,layoutResolution,shellPadding,tilePadding,stackSimilar):
+def checkVars(safetyProjectionAxis,methodSelect,autoAngle,autoSoften,layoutResolution,shellPadding,tilePadding,stackSimilar):
 	
 	quickUnwrapperSafetyProjection = cmds.radioButtonGrp(safetyProjectionAxis,q=True,sl=True)
 	quickUnwrapperMethod = cmds.optionMenu(methodSelect,q=True,sl=True)
-	quickUnwrapperAutoAngle = cmds.floatField(automaticAngle,q=True,v=True)
+	quickUnwrapperAutoAngle = cmds.floatField(autoAngle,q=True,v=True)
 	quickUnwrapperAutoSoften = cmds.checkBox(autoSoften,q=True,v=True)
 	quickUnwrapperTextureResolution = cmds.optionMenu(layoutResolution,q=True,sl=True)
 	quickUnwrapperShellPadding = cmds.intField(shellPadding,q=True,v=True)
@@ -127,38 +127,29 @@ def checkVars(safetyProjectionAxis,methodSelect,automaticAngle,autoSoften,layout
 	cmds.optionVar(iv=("quickUnwrapperShellPadding",quickUnwrapperShellPadding))
 	cmds.optionVar(iv=("quickUnwrapperTilePadding",quickUnwrapperTilePadding))
 	cmds.optionVar(iv=("quickUnwrapperStackSimilarShells",quickUnwrapperStackSimilarShells))
-
-	print cmds.optionVar(q="quickUnwrapperSafetyProjectionAxis")
-	print cmds.optionVar(q="quickUnwrapperMethod")
-	print cmds.optionVar(q="quickUnwrapperAutoAngle")
-	print cmds.optionVar(q="quickUnwrapperAutoSoften")
-	print cmds.optionVar(q="quickUnwrapperTextureResolution")
-	print cmds.optionVar(q="quickUnwrapperShellPadding")
-	print cmds.optionVar(q="quickUnwrapperTilePadding")
-	print cmds.optionVar(q="quickUnwrapperStackSimilarShells")
-
-	processRequest()
+	processRequest(quickUnwrapperSafetyProjection,quickUnwrapperMethod,quickUnwrapperAutoAngle,quickUnwrapperAutoSoften,quickUnwrapperTextureResolution,quickUnwrapperShellPadding,quickUnwrapperTilePadding,quickUnwrapperStackSimilarShells)
 
 def processRequest(quickUnwrapperSafetyProjection,quickUnwrapperMethod,quickUnwrapperAutoAngle,quickUnwrapperAutoSoften,quickUnwrapperTextureResolution,quickUnwrapperShellPadding,quickUnwrapperTilePadding,quickUnwrapperStackSimilarShells):
 	# Save current selection
-	print "Process Request..."
-	selectionBuffer = cmds.ls(sl=True,tr=True,tl=1,sn=True)
-	selectedMesh = selectionBuffer[0]
+	# selectionBuffer = cmds.ls(sl=True,tr=True,tl=1,sn=True)
+	selectionBuffer = cmds.ls(sl=True)
+	if quickUnwrapperMethod == 3:
+		selectedEdges = selectionBuffer
+		selectionSplit = selectionBuffer[0].split('.')
+		selectedMesh = selectionSplit[0]
+	else:
+		selectedMesh = selectionBuffer[0]
+		selectedEdges = 0
 	# Apply safety UV Projection (Planar Z?)
 	safetyProjection(selectedMesh,quickUnwrapperSafetyProjection)
 	# If mesh pre-softened/hardened, skip; if user wants to use selected edges, switch to edge selection; else, apply auto mesh softness based on input (default 45 degrees)
-	methodCheck(quickUnwrapperMethod)
+	methodCheck(selectedMesh,selectedEdges,quickUnwrapperMethod,quickUnwrapperAutoAngle,quickUnwrapperAutoSoften)
 	# Apply Unfold3D
-	unfoldProcess(quickUnwrapperTextureResolution,quickUnwrapperTilePadding)
+	unfoldProcess(selectedMesh,quickUnwrapperTextureResolution,quickUnwrapperTilePadding)
 	# Apply UV Optimization
-	optimizationStep(quickUnwrapperTextureResolution,quickUnwrapperTilePadding)
+	optimizationStep(selectedMesh,quickUnwrapperTextureResolution,quickUnwrapperTilePadding)
 	# Apply Layout, Shell Orientation, Layout again
 	layoutProcess(selectedMesh,quickUnwrapperTextureResolution,quickUnwrapperShellPadding,quickUnwrapperTilePadding)
-	# If user chose selected edges method, soften/harden edges based on selection; else, skip
-	if quickUnwrapperMethod == 3:
-		autoSoftenHarden(selectedEdges,unselectedEdges)
-	else:
-		print "ALL DONE!"
 
 def safetyProjection(selectedMesh,quickUnwrapperSafetyProjection):
 	# Apply safety UV Projection (Planar Z?)
@@ -174,64 +165,68 @@ def safetyProjection(selectedMesh,quickUnwrapperSafetyProjection):
 	elif quickUnwrapperSafetyProjection == 3:
 		axis = "z"
 	else:
-		print "What did you do?! I'm defaulting to Z."
-		axis = "z"
+		axis = "y"
 
 	cmds.polyProjection(meshFaces,t="Planar",md=axis)
 
-def methodCheck(quickUnwrapperMethod):
+def methodCheck(selectedMesh,selectedEdges,quickUnwrapperMethod,quickUnwrapperAutoAngle,quickUnwrapperAutoSoften):
 	# If mesh pre-softened/hardened, skip; if user wants to use selected edges, switch to edge selection; else, apply auto mesh softness based on input (default 45 degrees)
 	if quickUnwrapperMethod == 1:
 		autoSeamMethod(selectedMesh,quickUnwrapperAutoAngle)
 	elif quickUnwrapperMethod == 2:
 		softnessMethod(selectedMesh)
 	elif quickUnwrapperMethod == 3:
-		edgeSelectionMethod()
+		edgeSelectionMethod(selectedEdges,quickUnwrapperAutoSoften)
 	else:
-		print "How?! I'm defaulting to Automatic."
-		autoSeamMethod(selectedMesh)
+		autoSeamMethod(selectedMesh,quickUnwrapperAutoAngle)
 
 def autoSeamMethod(selectedMesh,quickUnwrapperAutoAngle):
 	# If user wants to use selected edges, use old method; else, apply auto-seams
 	cmds.polySoftEdge(selectedMesh,a=quickUnwrapperAutoAngle)
 	softnessMethod(selectedMesh)
 	# polyUVHardEdgesAutoSeams 1 ?
-	cutSeams()
+	# Command exists according to the script window but is unusable and non-existent in the help docs.  Could be a macro?  Found a workaround.
 
 def softnessMethod(selectedMesh):
 	# Softness method here if chosen, select and save hard edges, toggle to soft edges and save
+	cmds.select(selectedMesh)
 	cmds.polySelectConstraint(m=3,t=0x8000,sm=1)
 	hardEdges = cmds.ls(sl=True)
-	cmds.select(selectedMesh[0]+".e[*]",tgl=True)
+	cmds.select(selectedMesh+".e[*]",tgl=True)
 	softEdges = cmds.ls(sl=True)
 	cmds.polySelectConstraint(m=0,sm=0)
 
 	cutSeams(hardEdges)
 
-def edgeSelectionMethod():
+def edgeSelectionMethod(selectedEdges,quickUnwrapperAutoSoften):
 	# If user wants to use selected edges, use old method; else, apply auto-seams
-	selectedEdges = cmds.ls(sl=True)
-	hardEdges = selectedEdges[0]
-	selectionSplit = hardEdges.split('.')
+	#selectedEdges = cmds.ls(sl=True)
+	hardEdges = selectedEdges
+	selectionSplit = hardEdges[0].split('.')
 	selectedMesh = selectionSplit[0]
+	cmds.select(selectedEdges)
 	cmds.select(selectedMesh+'.e[*]',tgl=True)
 	softEdges = cmds.ls(sl=True)
 	cmds.select(cl=True)
 
 	cutSeams(hardEdges)
-	autoSoftenHarden(hardEdges,softEdges);
+	
+	if quickUnwrapperAutoSoften == 1:
+		autoSoftenHarden(hardEdges,softEdges);
+	else:
+		pass
 
 def cutSeams(hardEdges):
 	# Cut the seams where determined either by the user or by the script, soft edges shouldn't need to be sewn thanks to the safety projection
-	polyMapCut(hardEdges)
+	cmds.polyMapCut(hardEdges)
 
-def unfoldProcess(quickUnwrapperTextureResolution,quickUnwrapperTilePadding):
+def unfoldProcess(selectedMesh,quickUnwrapperTextureResolution,quickUnwrapperTilePadding):
 	# Apply Unfold3D, then Unfold Legacy step 1 (Horizontal), then Unfold Legacy step 2 (Vertical)
 	cmds.u3dUnfold(selectedMesh,ite=1,p=1,bi=1,tf=1,ms=quickUnwrapperTextureResolution,rs=quickUnwrapperTilePadding)
-	cmds.unfold(selectedMesh,i=5000,ss=0.001,gb=0,gmb=0.5,pub=False,pa=False,oa=2,us=False)
+	cmds.unfold(selectedMesh,i=5000,ss=0.001,gb=0,gmb=0.5,pub=False,ps=False,oa=2,us=False)
 	cmds.unfold(selectedMesh,i=5000,ss=0.001,gb=0,gmb=0.5,pub=False,ps=False,oa=1,us=False)
 
-def optimizationStep(quickUnwrapperTextureResolution,quickUnwrapperTilePadding):
+def optimizationStep(selectedMesh,quickUnwrapperTextureResolution,quickUnwrapperTilePadding):
 	# Apply UV Optimization
 	cmds.u3dOptimize(selectedMesh,ite=1,pow=1,sa=1,bi=0,tf=1,ms=quickUnwrapperTextureResolution,rs=quickUnwrapperTilePadding)
 
@@ -250,15 +245,12 @@ def convertPixeltoUV(dataBuffer):
 def orientationStep(selectedMesh):
 	# Apply shell Orientation
 	# texOrientShells ?
-	print "\*BURP\* I'm useless right now..."
+	print "I'm useless right now...  Similarly to the comments in autoSeamMethod, texOrientShells shows up in the script editor when using the command through Maya's UI but can't be used through scripts and is non-existent in the Maya docs.  Looking for a workaround."
 
 def autoSoftenHarden(selectedEdges,unselectedEdges):
 	# If user chose selected edges method, soften/harden edges based on selection; else, skip
 	cmds.polySoftEdge(selectedEdges,a=0)
 	cmds.polySoftEdge(unselectedEdges,a=180)
-
-# def makeShelfButton():
-	# Call QUShelf.py to generate shelf icon in the Poly Modeling tab
 	
 def _null(*args):
 	pass
