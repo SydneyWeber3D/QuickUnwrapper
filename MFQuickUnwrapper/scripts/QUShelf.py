@@ -1,5 +1,3 @@
-import maya.cmds as cmds
-
 def _null(*args):
 	pass
 

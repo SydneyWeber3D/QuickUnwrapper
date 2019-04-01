@@ -1,10 +1,46 @@
 import maya.cmds as cmds
 
 '''
-import QuickUnwrapper
-reload(QuickUnwrapper)
-QuickUnwrapper.quWindow()
+import QUTest
+reload(QUTest)
+QuickUnwrapper.checkSavedValues()
 '''
+
+def checkSavedValues():
+	if cmds.optionVar(ex="quickUnwrapperSafetyProjectionAxis"):
+		setProjAxis = cmds.optionVar(q="quickUnwrapperSafetyProjectionAxis")
+	else:
+		setProjAxis = 3
+	if cmds.optionVar(ex="quickUnwrapperMethod"):
+		setMethod = cmds.optionVar(q="quickUnwrapperMethod")
+	else:
+		setMethod = 1
+	if cmds.optionVar(ex="quickUnwrapperAutoAngle"):
+		setAngle = cmds.optionVar(q="quickUnwrapperAutoAngle")
+	else:
+		setAngle = 60.00
+	if cmds.optionVar(ex="quickUnwrapperAutoSoften"):
+		setSoftness = cmds.optionVar(q="quickUnwrapperAutoSoften")
+	else:
+		setSoftness = 0
+	if cmds.optionVar(ex="quickUnwrapperTextureResolution"):
+		setResolution = cmds.optionVar(q="quickUnwrapperTextureResolution")
+	else:
+		setResolution = 3
+	if cmds.optionVar(ex="quickUnwrapperShellPadding"):
+		setShellPad = cmds.optionVar(q="quickUnwrapperShellPadding")
+	else:
+		setShellPad = 4
+	if cmds.optionVar(ex="quickUnwrapperTilePadding"):
+		setTilePad = cmds.optionVar(q="quickUnwrapperTilePadding")
+	else:
+		setTilePad = 8
+	if cmds.optionVar(ex="quickUnwrapperStackSimilarShells"):
+		setShellStack = cmds.optionVar(q="quickUnwrapperStackSimilarShells")
+	else:
+		setShellStack = 0
+
+	quWindow(setProjAxis,setMethod,setAngle,setSoftness,setResolution,setShellPad,setTilePad,setShellStack)
 
 def quWindow(setProjAxis,setMethod,setAngle,setSoftness,setResolution,setShellPad,setTilePad,setShellStack):
 	if cmds.window("quWindow",ex=True):
@@ -67,47 +103,98 @@ def quWindow(setProjAxis,setMethod,setAngle,setSoftness,setResolution,setShellPa
 	cmds.rowLayout("buttonsRow",nc=3,p="quContainer")
 	cmds.button(l="Unwrap",w=64,h=32,ann="Process the request and unwrap selected mesh.",c=(lambda args: checkVars(safetyProjectionAxis,methodSelect,automaticAngle,autoSoften,layoutResolution,shellPadding,tilePadding,stackSimilar)))
 	cmds.button(l="Cancel",w=64,h=32,ann="Cancel and close script.",c=("cmds.deleteUI(\"quWindow\",wnd=True); cmds.windowPref(\"quWindow\",r=True)"))
+	cmds.button(l="Cancel",w=32,h=32,ann="Create shelf icon."",c=(lambda args:addShelfIcon()))
 	cmds.separator(w=256,h=8,st="none",p="quContainer")
 
 	cmds.showWindow("quWindow")
 
-def processRequest():
+def checkVars(safetyProjectionAxis,methodSelect,automaticAngle,autoSoften,layoutResolution,shellPadding,tilePadding,stackSimilar):
+	
+	quickUnwrapperSafetyProjection = cmds.radioButtonGrp(safetyProjectionAxis,q=True,sl=True)
+	quickUnwrapperMethod = cmds.optionMenu(methodSelect,q=True,sl=True)
+	quickUnwrapperAutoAngle = cmds.floatField(automaticAngle,q=True,v=True)
+	quickUnwrapperAutoSoften = cmds.checkBox(autoSoften,q=True,v=True)
+	quickUnwrapperTextureResolution = cmds.optionMenu(layoutResolution,q=True,sl=True)
+	quickUnwrapperShellPadding = cmds.intField(shellPadding,q=True,v=True)
+	quickUnwrapperTilePadding = cmds.intField(tilePadding,q=True,v=True)
+	quickUnwrapperStackSimilarShells = cmds.checkBox(stackSimilar,q=True,v=True)
+
+	cmds.optionVar(iv=("quickUnwrapperSafetyProjectionAxis",quickUnwrapperSafetyProjection))
+	cmds.optionVar(iv=("quickUnwrapperMethod",quickUnwrapperMethod))
+	cmds.optionVar(fv=("quickUnwrapperAutoAngle",quickUnwrapperAutoAngle))
+	cmds.optionVar(iv=("quickUnwrapperAutoSoften",quickUnwrapperAutoSoften))
+	cmds.optionVar(iv=("quickUnwrapperTextureResolution",quickUnwrapperTextureResolution))
+	cmds.optionVar(iv=("quickUnwrapperShellPadding",quickUnwrapperShellPadding))
+	cmds.optionVar(iv=("quickUnwrapperTilePadding",quickUnwrapperTilePadding))
+	cmds.optionVar(iv=("quickUnwrapperStackSimilarShells",quickUnwrapperStackSimilarShells))
+
+	print cmds.optionVar(q="quickUnwrapperSafetyProjectionAxis")
+	print cmds.optionVar(q="quickUnwrapperMethod")
+	print cmds.optionVar(q="quickUnwrapperAutoAngle")
+	print cmds.optionVar(q="quickUnwrapperAutoSoften")
+	print cmds.optionVar(q="quickUnwrapperTextureResolution")
+	print cmds.optionVar(q="quickUnwrapperShellPadding")
+	print cmds.optionVar(q="quickUnwrapperTilePadding")
+	print cmds.optionVar(q="quickUnwrapperStackSimilarShells")
+
+	processRequest()
+
+def processRequest(quickUnwrapperSafetyProjection,quickUnwrapperMethod,quickUnwrapperAutoAngle,quickUnwrapperAutoSoften,quickUnwrapperTextureResolution,quickUnwrapperShellPadding,quickUnwrapperTilePadding,quickUnwrapperStackSimilarShells):
 	# Save current selection
+	print "Process Request..."
 	selectionBuffer = cmds.ls(sl=True,tr=True,tl=1,sn=True)
 	selectedMesh = selectionBuffer[0]
 	# Apply safety UV Projection (Planar Z?)
-	safetyProjection(selectedMesh)
+	safetyProjection(selectedMesh,quickUnwrapperSafetyProjection)
 	# If mesh pre-softened/hardened, skip; if user wants to use selected edges, switch to edge selection; else, apply auto mesh softness based on input (default 45 degrees)
-	methodCheck()
+	methodCheck(quickUnwrapperMethod)
 	# Apply Unfold3D
-	unfoldProcess()
+	unfoldProcess(quickUnwrapperTextureResolution,quickUnwrapperTilePadding)
 	# Apply UV Optimization
-	optimizationStep()
-	# Apply Layout
-	layoutProcess()
-	# Apply shell Orientation
-	# Apply Layout step 2
+	optimizationStep(quickUnwrapperTextureResolution,quickUnwrapperTilePadding)
+	# Apply Layout, Shell Orientation, Layout again
+	layoutProcess(selectedMesh,quickUnwrapperTextureResolution,quickUnwrapperShellPadding,quickUnwrapperTilePadding)
 	# If user chose selected edges method, soften/harden edges based on selection; else, skip
+	if quickUnwrapperMethod == 3:
+		autoSoftenHarden(selectedEdges,unselectedEdges)
+	else:
+		print "ALL DONE!"
 
-def safetyProjection(selectedMesh):
+def safetyProjection(selectedMesh,quickUnwrapperSafetyProjection):
 	# Apply safety UV Projection (Planar Z?)
 	cmds.select(selectedMesh+".f[*]")
 	facesBuffer = cmds.ls(sl=True,tl=1)
 	meshFaces = facesBuffer[0]
 	cmds.select(cl=True)
+	
+	if quickUnwrapperSafetyProjection == 1:
+		axis = "x"
+	elif quickUnwrapperSafetyProjection == 2:
+		axis = "y"
+	elif quickUnwrapperSafetyProjection == 3:
+		axis = "z"
+	else:
+		print "What did you do?! I'm defaulting to Z."
+		axis = "z"
 
-	cmds.polyProjection(meshFaces,t="Planar",md="z")
+	cmds.polyProjection(meshFaces,t="Planar",md=axis)
 
-def methodCheck():
+def methodCheck(quickUnwrapperMethod):
 	# If mesh pre-softened/hardened, skip; if user wants to use selected edges, switch to edge selection; else, apply auto mesh softness based on input (default 45 degrees)
-	# autoSeamMethod(selectedMesh)
-	# softnessMethod(selectedMesh)
-	# edgeSelectionMethod()
-	print "poot"
+	if quickUnwrapperMethod == 1:
+		autoSeamMethod(selectedMesh,quickUnwrapperAutoAngle)
+	elif quickUnwrapperMethod == 2:
+		softnessMethod(selectedMesh)
+	elif quickUnwrapperMethod == 3:
+		edgeSelectionMethod()
+	else:
+		print "How?! I'm defaulting to Automatic."
+		autoSeamMethod(selectedMesh)
 
-def autoSeamMethod(selectedMesh):
+def autoSeamMethod(selectedMesh,quickUnwrapperAutoAngle):
 	# If user wants to use selected edges, use old method; else, apply auto-seams
-	cmds.polySoftEdge(selectedMesh,a=60)
+	cmds.polySoftEdge(selectedMesh,a=quickUnwrapperAutoAngle)
+	softnessMethod(selectedMesh)
 	# polyUVHardEdgesAutoSeams 1 ?
 	cutSeams()
 
@@ -119,7 +206,7 @@ def softnessMethod(selectedMesh):
 	softEdges = cmds.ls(sl=True)
 	cmds.polySelectConstraint(m=0,sm=0)
 
-	cutSeams()
+	cutSeams(hardEdges)
 
 def edgeSelectionMethod():
 	# If user wants to use selected edges, use old method; else, apply auto-seams
@@ -135,29 +222,35 @@ def edgeSelectionMethod():
 	autoSoftenHarden(hardEdges,softEdges);
 
 def cutSeams(hardEdges):
-	# Cut the seams where determined either by the user of by the script
+	# Cut the seams where determined either by the user or by the script, soft edges shouldn't need to be sewn thanks to the safety projection
 	polyMapCut(hardEdges)
 
-def unfoldProcess():
+def unfoldProcess(quickUnwrapperTextureResolution,quickUnwrapperTilePadding):
 	# Apply Unfold3D, then Unfold Legacy step 1 (Horizontal), then Unfold Legacy step 2 (Vertical)
-	cmds.u3dUnfold(selectedMesh,ite=1,p=1,bi=1,tf=1,ms=layoutResolution,rs=16)
+	cmds.u3dUnfold(selectedMesh,ite=1,p=1,bi=1,tf=1,ms=quickUnwrapperTextureResolution,rs=quickUnwrapperTilePadding)
 	cmds.unfold(selectedMesh,i=5000,ss=0.001,gb=0,gmb=0.5,pub=False,pa=False,oa=2,us=False)
 	cmds.unfold(selectedMesh,i=5000,ss=0.001,gb=0,gmb=0.5,pub=False,ps=False,oa=1,us=False)
 
-def optimizationStep():
+def optimizationStep(quickUnwrapperTextureResolution,quickUnwrapperTilePadding):
 	# Apply UV Optimization
-	cmds.u3dOptimize(selectedMesh,ite=1,pow=1,sa=1,bi=0,tf=1,ms=layoutResolution,rs=0)
+	cmds.u3dOptimize(selectedMesh,ite=1,pow=1,sa=1,bi=0,tf=1,ms=quickUnwrapperTextureResolution,rs=quickUnwrapperTilePadding)
 
-def layoutProcess():
+def layoutProcess(selectedMesh,quickUnwrapperTextureResolution,quickUnwrapperShellPadding,quickUnwrapperTilePadding):
+	# Convert pixel input to UV
+	shellPaddingUV = convertPixeltoUV(quickUnwrapperShellPadding)
+	tilePaddingUV = convertPixeltoUV(quickUnwrapperShellPadding)
 	# Apply Layout step 1, calls for re-orientation of shells, then apply Layout step 2
-	cmds.u3dLayout(selectedMesh,res=1024,scl=1,spc=0.001953125,mar=0.00390625,box=[0,1,0,1])
+	cmds.u3dLayout(selectedMesh,res=quickUnwrapperTextureResolution,scl=1,spc=shellPaddingUV,mar=tilePaddingUV,box=[0,1,0,1])
 	orientationStep(selectedMesh)
-	cmds.u3dLayout(selectedMesh,res=1024,scl=0,spc=0.001953125,mar=0.00390625,box=[0,1,0,1])
+	cmds.u3dLayout(selectedMesh,res=quickUnwrapperTextureResolution,scl=0,spc=shellPaddingUV,mar=tilePaddingUV,box=[0,1,0,1])
 
-def orientationStep():
+def convertPixeltoUV(dataBuffer):
+	return dataBuffer*0.0009765625
+
+def orientationStep(selectedMesh):
 	# Apply shell Orientation
 	# texOrientShells ?
-	print "burp"
+	print "\*BURP\* I'm useless right now..."
 
 def autoSoftenHarden(selectedEdges,unselectedEdges):
 	# If user chose selected edges method, soften/harden edges based on selection; else, skip
@@ -166,5 +259,27 @@ def autoSoftenHarden(selectedEdges,unselectedEdges):
 
 # def makeShelfButton():
 	# Call QUShelf.py to generate shelf icon in the Poly Modeling tab
+	
+def _null(*args):
+	pass
 
-quWindow()
+class _shelf():
+	def __init__(self, shelfName="Polygons", iconPath=""):
+		self.shelfName = shelfName
+		self.iconPath = iconPath
+		cmds.setParent(self.shelfName)
+
+		self.build()
+
+	def build(self):
+		pass
+
+	def addButton(self, label, icon="QU_shelfIcon.png"):
+		cmds.setParent(self.shelfName)
+		if icon:
+			icon = self.iconPath + icon
+			cmds.shelfButton(w=32,h=32,i=icon,l=label,mi=("Settings", "print \"Open Settings\""),c="print \"Run Script\"",dcc="print \"Open Settings 2\"",st="iconOnly")
+
+class addShelfIcon(_shelf):
+	def build(self):
+		self.addButton(label="Quick Unwrapper")

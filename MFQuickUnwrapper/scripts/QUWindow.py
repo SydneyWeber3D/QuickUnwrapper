@@ -1,4 +1,5 @@
 import QUShelf
+import QUSettings
 
 def quWindow(setProjAxis,setMethod,setAngle,setSoftness,setResolution,setShellPad,setTilePad,setShellStack):
 	if cmds.window("quWindow",ex=True):
@@ -59,7 +60,7 @@ def quWindow(setProjAxis,setMethod,setAngle,setSoftness,setResolution,setShellPa
 	cmds.setParent("quContainer")
 	cmds.separator(w=256,h=8,st="none")
 	cmds.rowLayout("buttonsRow",nc=3,p="quContainer")
-	cmds.button(l="Unwrap",w=64,h=32,ann="Process the request and unwrap selected mesh.",c=(lambda args: checkVars(safetyProjectionAxis,methodSelect,automaticAngle,autoSoften,layoutResolution,shellPadding,tilePadding,stackSimilar)))
+	cmds.button(l="Unwrap",w=64,h=32,ann="Process the request and unwrap selected mesh.",c=(lambda args: QUSettings.checkVars(safetyProjectionAxis,methodSelect,automaticAngle,autoSoften,layoutResolution,shellPadding,tilePadding,stackSimilar)))
 	cmds.button(l="Cancel",w=64,h=32,ann="Cancel and close script.",c=("cmds.deleteUI(\"quWindow\",wnd=True); cmds.windowPref(\"quWindow\",r=True)"))
 	cmds.button(l="H",w=16,h=16,ann="Create shelf button.",c=(lambda args=QUShelf.addShelfIcon()))
 	cmds.separator(w=256,h=8,st="none",p="quContainer")
