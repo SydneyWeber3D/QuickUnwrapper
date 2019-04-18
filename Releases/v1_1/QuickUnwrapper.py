@@ -303,7 +303,7 @@ def convertPixeltoUV(dataBuffer):
 def orientationStep(selectedMesh):
 	# Apply shell Orientation
 	# texOrientShells ?
-	print "BURP I'm useless right now..."
+	print "I'm the Shell Orientation function and I'm useless right now..."
 
 def autoSoftenHarden(selectedEdges,unselectedEdges):
 	# If user chose selected edges method, soften/harden edges based on selection; else, skip
