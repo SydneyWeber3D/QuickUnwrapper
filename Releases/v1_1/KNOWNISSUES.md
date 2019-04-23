@@ -17,5 +17,5 @@ Shelf Button:
 
 Functionality:
 	• Shell Stacking option appears to have broken.
-	• Pixel Density option is currently only a UI component and has no function.
+	• Texel Density option is currently only a UI component and has no function.
 	• Shell Orientation is currently skipped as its function contains no code.
