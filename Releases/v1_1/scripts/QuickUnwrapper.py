@@ -324,7 +324,7 @@ class _shelf():
 	def build(self):
 		pass
 
-	def addButton(self, label, icon="QU_shelfIcon.png"):
+	def addButton(self, label, icon="QU_ShelfIcon.png"):
 		cmds.setParent(self.shelfName)
 		if icon:
 			icon = self.iconPath + icon
